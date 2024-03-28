@@ -11,6 +11,7 @@ int main(void){
     char server_message[BUFF], client_message[BUFF];
     int client_struct_length = sizeof(client_addr);
     int valid;
+    FILE *message = fopen("recived.txt", W);
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
@@ -44,6 +45,7 @@ int main(void){
             (struct sockaddr*)&client_addr, &client_struct_length) < 0){
             printf("Couldn't receive\n");
             return -1;
+            valid = 0;
         }
         printf("Received message from IP: %s and port: %i\n",
                 inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
@@ -51,12 +53,13 @@ int main(void){
         printf("Msg from client: %s\n", client_message);
     
         // Respond to client:
-        strcpy(server_message, client_message);
+        fprintf(*message, "%s", client_message);
     
-        if (sendto(socket_desc, server_message, strlen(server_message), 0,
+        if (sendto(socket_desc, "File recived from client", strlen(server_message), 0,
             (struct sockaddr*)&client_addr, client_struct_length) < 0){
             printf("Can't send\n");
             return -1;
+            valid = 0;
         }
     }
     // Close the socket:
