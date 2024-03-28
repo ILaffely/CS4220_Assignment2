@@ -89,7 +89,7 @@ int main(void){
 	//fgets(client_buffer,BUFFSIZE, stdin);
 
 	//send the message to the server
-	chat(socket_ID, client_buffer, server_addr, server_struct_len);
+	chat(socket_ID, server_addr, server_struct_len);
 
 	//get server response
 	if(recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
