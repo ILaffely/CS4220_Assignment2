@@ -2,7 +2,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+
 #define BUFFSIZE 2000
+
 int main(void){
 	int socket_ID;
 	struct socketaddr_in server_addr;
@@ -29,7 +31,7 @@ int main(void){
 
 	//user input
 	printf("Message> ");
-	fgets(client_buffer,BUFFSIZE);
+	fgets(client_buffer,BUFFSIZE, stdin);
 
 	//send the message to the server
 	if(sendto(socket_ID, client_buffer, strlen(client_buffer), 0, 
