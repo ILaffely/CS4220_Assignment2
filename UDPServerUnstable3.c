@@ -5,7 +5,7 @@
 
 #define BUFF 2000
 #define PORT 2000
-#define EOTSTRING "$end$of$transmission$\n"
+#define EOTSTRING "$end$of$transmission$"
 
 int main(void){
     int socket_desc;
