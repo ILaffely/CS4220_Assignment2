@@ -7,7 +7,7 @@
 
 int main(void){
 	int socket_ID;
-	struct socketaddr_in server_addr;
+	struct sockaddr_in server_addr;
 	char server_buffer[BUFFSIZE], client_buffer[BUFFSIZE];
 	int server_struct_len = sizeof(server_addr);
 
