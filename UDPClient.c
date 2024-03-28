@@ -42,7 +42,7 @@ int main(void){
 
 	//get server response
 	if(recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
-	(struct sockaddr*)&server_addr, server_struct_len) < 0){
+	(struct sockaddr*)&server_addr, &server_struct_len) < 0){
 		printf("Error receiving server message.\n");
 		return -1;
 	}
