@@ -68,6 +68,9 @@ int main(void){
                     // Print to file if string is not EOFSTRING
                     fprintf(message, "%s", client_message);
                     printf("Appending to file -- %s", client_message);
+
+                    //clear buffers
+                    memset(client_message, '\0', sizeof(client_message));
                 }       
                
         
