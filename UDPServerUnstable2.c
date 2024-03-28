@@ -4,16 +4,17 @@
 #include <arpa/inet.h>
 
 #define BUFF 2000
+#define PORT 2000
 
 int main(void){
     int socket_desc;
     struct sockaddr_in server_addr, client_addr;
-    char server_message[BUFF], client_message[BUFF];
+    char client_message[BUFF];
     int client_struct_length = sizeof(client_addr);
     int valid;
-    FILE *message = fopen("recived.txt", "w");
+    FILE *message = fclose(fopen("received.txt", "w"));
+
     // Clean buffers:
-    memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
     
     // Create UDP socket:
@@ -27,7 +28,7 @@ int main(void){
     
     // Set port and IP:
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(BUFF);
+    server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     
     // Bind to the set port and IP:
@@ -36,6 +37,8 @@ int main(void){
         return -1;
     }
     printf("Done with binding\n");
+    
+    message = fopen("received.txt", "a");
     valid = 1;
     while (valid == 1) {
         printf("Listening for incoming messages...\n\n");
@@ -44,25 +47,30 @@ int main(void){
         if (recvfrom(socket_desc, client_message, sizeof(client_message), 0,
             (struct sockaddr*)&client_addr, &client_struct_length) < 0){
             printf("Couldn't receive\n");
-            return -1;
             valid = 0;
         }
-        printf("Received message from IP: %s and port: %i\n",
+        else {
+            printf("Received message from IP: %s and port: %i\n",
                 inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     
-        printf("Msg from client: %s\n", client_message);
-    
-        // Respond to client:
-        fprintf(message, "%s", client_message);
-        fclose(message);
-    
-        if (sendto(socket_desc, "File recived from client", strlen(server_message), 0,
-            (struct sockaddr*)&client_addr, client_struct_length) < 0){
-            printf("Can't send\n");
-            return -1;
-            valid = 0;
+            printf("Msg from client: %s\n", client_message);
+            
+            //save message to a file
+            
+
+            fprintf(message, "%s", client_message);
+            
+            // Respond to client:
+            if (sendto(socket_desc, "File received from client", strlen("File received from client"), 0,
+                (struct sockaddr*)&client_addr, client_struct_length) < 0){
+                printf("Can't send\n");
+                valid = 0;
+            }
         }
     }
+    
+    //close the message
+    fclose(message);
     // Close the socket:
     close(socket_desc);
     
