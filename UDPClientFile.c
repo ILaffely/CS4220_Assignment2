@@ -9,7 +9,7 @@
 #define MAX 80
 #define BUFFSIZE 2000
 
-int chat(int socket_ID, char client_buffer[], struct sockaddr_in server_addr, int server_struct_len)
+int chat(int socket_ID, struct sockaddr_in server_addr, int server_struct_len)
 {
 	char buffer[MAX];
 	int n;
