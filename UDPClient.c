@@ -7,7 +7,7 @@
 
 int main(void){
 	int socket_ID;
-	struct socketaddr_in server_addr;
+	struct sockaddr_in server_addr;
 	char server_buffer[BUFFSIZE], client_buffer[BUFFSIZE];
 	int server_struct_len = sizeof(server_addr);
 
@@ -42,7 +42,7 @@ int main(void){
 
 	//get server response
 	if(recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
-	(struct sockaddr*)&server_addr, server_struct_len) < 0){
+	(struct sockaddr*)&server_addr, &server_struct_len) < 0){
 		printf("Error receiving server message.\n");
 		return -1;
 	}
