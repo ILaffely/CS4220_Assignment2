@@ -85,8 +85,8 @@ int main(void){
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	//user input
-	printf("Message> ");
-	fgets(client_buffer,BUFFSIZE, stdin);
+	//printf("Message> ");
+	//fgets(client_buffer,BUFFSIZE, stdin);
 
 	//send the message to the server
 	chat(socket_ID, client_buffer, server_addr, server_struct_len);
