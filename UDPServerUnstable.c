@@ -71,30 +71,32 @@ int main(void) {
                     if (strcmp(client_message, EOTSTRING) == 0) {
                         printf("EOF Reached... Terminating\n");
                         eof = 0;
-                        break; // Exit the loop
                     }
+                    if (eof != 0){
+                        // Print to file if string is not EOFSTRING
+                        fprintf(message, "%s", client_message);
 
-                    // Print to file if string is not EOFSTRING
-                    fprintf(message, "%s", client_message);
+                        // Increment expected sequence number
+                        expectedSeqNum++;
+                        ackedSeqNum = receivedSeqNum;
 
-                    // Increment expected sequence number
-                    expectedSeqNum++;
-                    ackedSeqNum = receivedSeqNum;
-
-                    // Send ACK for received sequence number
-                    sprintf(client_message, "%d", receivedSeqNum);
-                    sendto(socket_desc, client_message, strlen(client_message), 0,
+                        // Send ACK for received sequence number
+                        sprintf(client_message, "%d", receivedSeqNum);
+                        sendto(socket_desc, client_message, strlen(client_message), 0,
                         (struct sockaddr*)&client_addr, client_struct_length);
 
-                    // If last frame of window, update window start and end
-                    if (receivedSeqNum == windowEnd) {
-                        windowStart = receivedSeqNum + 1;
-                        windowEnd = windowStart + WINDOW_SIZE - 1;
+                        // If last frame of window, update window start and end
+                        if (receivedSeqNum == windowEnd) {
+                            windowStart = receivedSeqNum + 1;
+                            windowEnd = windowStart + WINDOW_SIZE - 1;
+                        }
                     }
                 }
                 else {
                     // Send cumulative ACK for last received frame
-                    sprintf(client_message, "%d", ackedSeqNum);
+                    sprintf(client_message, "$ACK#%d", ackedSeqNum);
+                    //print ACK for testing
+                    printf(client_message);
                     sendto(socket_desc, client_message, strlen(client_message), 0,
                         (struct sockaddr*)&client_addr, client_struct_length);
                 }
