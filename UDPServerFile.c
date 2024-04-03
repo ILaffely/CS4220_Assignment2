@@ -14,7 +14,7 @@ int main(void){
     int client_struct_length = sizeof(client_addr);
     int valid;
     int eof;
-    FILE *message = fopen("received.txt", "w"); //clear the recived file
+    FILE *message = fopen("received.txt", "a"); //clear the recived file
     fclose(message);
     message = fopen("received.txt", "a");
     // Clean buffers:
@@ -67,7 +67,7 @@ int main(void){
                     
                     // Print to file if string is not EOFSTRING
                     fprintf(message, "%s", client_message);
-                    printf("Appending to file -- %s", client_message);
+                    printf("Appending to file -- %s\n", client_message);
 
                     //clear buffers
                     memset(client_message, '\0', sizeof(client_message));

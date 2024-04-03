@@ -2,18 +2,25 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #define BUFF 2000
+#define PORT 2000
+#define EOTSTRING "$end$of$transmission$"
 
 int main(void){
     int socket_desc;
     struct sockaddr_in server_addr, client_addr;
-    char server_message[BUFF], client_message[BUFF];
+    char client_message[BUFF];
     int client_struct_length = sizeof(client_addr);
     int valid;
-    FILE *message = fopen("recived.txt", "w");
+    int eof;
+
+    time_t rawtime;
+    struct tm *timeinfo;
+    char time_string[80];
+    FILE *message = fopen("log.txt", "a"); //clear the recived file
     // Clean buffers:
-    memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
     
     // Create UDP socket:
@@ -27,42 +34,71 @@ int main(void){
     
     // Set port and IP:
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(BUFF);
+    server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     
     // Bind to the set port and IP:
     if(bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
-        printf("Couldn't bind to the port\n");
+        printf("Binding with port failed\n");
         return -1;
     }
-    printf("Done with binding\n");
+    printf("Binding sucsess\n");
     valid = 1;
-    while (valid == 1) {
-        printf("Listening for incoming messages...\n\n");
-    
-        // Receive client's message:
-        if (recvfrom(socket_desc, client_message, sizeof(client_message), 0,
-            (struct sockaddr*)&client_addr, &client_struct_length) < 0){
-            printf("Couldn't receive\n");
-            return -1;
-            valid = 0;
+    eof = 1;
+    while (valid & eof) {
+       
+
+        // Loop to receive multiple messages until delimiter is reached:
+        while (eof) {
+            // Receive client's message:
+            if (recvfrom(socket_desc, client_message, sizeof(client_message), 0,
+                (struct sockaddr*)&client_addr, &client_struct_length) < 0){
+                printf("Receiving failed\n");
+                valid = 0;// Break out of the loop if receiving fails
+            }
+            else {
+                printf("Message received -- IP: %s and port: %i\n",
+                    inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+
+                if (strcmp(client_message, EOTSTRING) == 0) {
+                    
+                    printf("EOF Reached... Terminating\n"); 
+                    printf("Getting message from client\n\n");
+                    //get the time
+                    time(&rawtime);
+                    timeinfo = localtime(&rawtime);
+
+                    // Format the time as a string
+                    strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", timeinfo);
+
+                    // Print the current time
+                    fprintf(message, "--Message received-- %s\n", time_string);
+
+                    eof = 0;
+
+                } else { 
+                    
+                    // Print to file if string is not EOFSTRING
+                    fprintf(message, "%s", client_message);
+                    printf("Appending to file -- %s\n", client_message);
+
+                    //clear buffers
+                    memset(client_message, '\0', sizeof(client_message));
+                }       
+               
+            }
+            
         }
-        printf("Received message from IP: %s and port: %i\n",
-                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-    
-        printf("Msg from client: %s\n", client_message);
-    
-        // Respond to client:
-        fprintf(message, "%s", client_message);
-        fclose(message);
-    
-        if (sendto(socket_desc, "File recived from client", strlen(server_message), 0,
+        
+        eof = 1;
+        if (sendto(socket_desc, "File received", strlen("File received"), 0,
             (struct sockaddr*)&client_addr, client_struct_length) < 0){
             printf("Can't send\n");
-            return -1;
-            valid = 0;
         }
     }
+    // Close the file
+    fclose(message);
     // Close the socket:
     close(socket_desc);
     
