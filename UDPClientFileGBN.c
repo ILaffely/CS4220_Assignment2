@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -10,15 +11,17 @@
 #define PACKET 64
 #define DATALIMIT 1023
 #define MAX 80
-#define BUFFSIZE 2000
+#define BUFFSIZE 1023
 #define WINDOW 6
-#define TIMEOUT 2000
+#define TIMEOUT 3
+#define MAXTRIES 10
 
-volatile sig_atomic_t print_flag = false;
+int tries = 0;
+	
+char server_buffer[BUFFSIZE], client_buffer[BUFFSIZE];
 
-void handle_alarm( int sig ){
-	print_flag = true;
-}
+void CatchAlarm(int ignored);
+
 
 struct dataPacket {
     int type;
@@ -28,11 +31,17 @@ struct dataPacket {
 };
 typedef struct dataPacket dataPacket;
 
-struct segmentPacket createDataPacket (int seq_no, int length, char* data);
-struct segmentPacket createTerminalPacket (int seq_no, int length);
+struct ACKPacket {
+    int type;
+    int ack_no;
+};
+
+dataPacket createTitlePacket(int seq_no, int length, char* data);
+dataPacket createDataPacket(int seq_no, int length, char* data);
+dataPacket createTerminalPacket(int seq_no, int length);
 
 long int FileSize(char* fileName){
-	FILE* filep = fopen(buffer, "r");
+	FILE* filep = fopen(fileName, "r");
 		
 	if (filep == NULL){
 		printf("File not Found!\n");
@@ -55,87 +64,108 @@ dataPacket* packager(char* buffer, int packetCount)
 
 	packets[0] = createTitlePacket(0,strlen(buffer),buffer);
 
-	int packetCount = 1;
+	int currPacket = 1;
+	FILE* filep = fopen(buffer, "r");
+		
+	if (filep == NULL){
+		printf("File not Found!\n");
+		return NULL;
+	}
 	//packeter
 	while(!feof(filep)){
 		bzero(filebuffer, sizeof(filebuffer));
 		int offset = fread(filebuffer, sizeof(char), PACKET, filep); //amount of chars read
-		packets[packetCount] = createDataPacket(packetCount,offset,filebuffer);
-		packetCount++;
+		packets[currPacket] = createDataPacket(currPacket,offset,filebuffer);
+		currPacket++;
 	}
 
-	packets[packetCount] = createTerminalPacket(packetCount);
+	packets[currPacket] = createTerminalPacket(currPacket, 0);
 
 	return 0;
 }
 
-void GBNSend(dataPacket* packets, int packetsLength, int socket_ID, struct sockaddr_in server_addr, char server_buffer[],int server_struct_len){
-	signal( SIGALRM, handle_alarm );
+void GBNSend(dataPacket* packets, int packetsLength, int socket_ID, struct sockaddr_in server_addr,int server_struct_len){
 	
-	int sendBase = 0;
+	int sendBase = -1;
 	int nextSeqNum = 0;
-	bool timer = false;
-	int countdown = TIMEOUT;
-	clock_t before = 0;
-	clock_t difference = 0;
+	int dataLength = 0;
+
+	int respStringLen;
+
+	struct sigaction AlrmSig;
+	AlrmSig.sa_handler = CatchAlarm;
+	if (sigemptyset(&AlrmSig.sa_mask) < 0){ printf("sigfillset() failed"); return; }
+	AlrmSig.sa_flags = 0;
+
+	if (sigaction(SIGALRM, &AlrmSig, 0) < 0){ printf("sigaction() failed for SIGALRM"); return; }
 
 	int noTerminalACK = 1;
 	while(noTerminalACK){
 		/*send packets from base to window size*/
 		while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
-			if(sendto(socket_ID, (dataPacket*)&packets[nextSeqNum], sizeof(char)*offset, 0, 
+			if(sendto(socket_ID, &packets[nextSeqNum], sizeof(char)*strlen(packets[nextSeqNum].data), 0, 
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 					printf("Unable to send message.\n");
-					return -1;
+					return;
 				}
 			nextSeqNum++;
 		}
-		//rest goes below
 		
-	}
-	/*while (true){
-		if (nextSeqNum < sendBase + WINDOW){
-			//send packet nextSeq
-			nextSeqNum = nextSeqNum + 1
-		}
+		//timer
+		alarm(3);
 
-		if(recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
+		struct ACKPacket ack;
+
+		while(respStringLen = recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
 		 (struct sockaddr*)&server_addr, &server_struct_len) < 0){
-			printf("Error receiving server message.\n");
-			return -1;
-		}
 
-		if(strcmp("$ACK#", server_buffer, 5) == 0){
-			sendBase = n + 1;
-			if (sendBase == nextSeqNum){
-				//stop timer
-				timer = false;
+			if (errno == EINTR){ /*alarm activated*/
+				//reset to one after last successfull ack
+				nextSeqNum = sendBase + 1;
+
+				printf("Timeout: Trying Again");
+				if (tries >= MAXTRIES){
+					printf("Max Attemps Exceded: Returning");
+					return;
+				}
+				else{
+					alarm(0);
+
+					while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
+						if(sendto(socket_ID, &packets[nextSeqNum], sizeof(char)*strlen(packets[nextSeqNum].data), 0, 
+				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
+							printf("Unable to send message.\n");
+							return;
+						}
+						nextSeqNum++;
+					}
+					alarm(TIMEOUT);
+				}
+				tries++;
 			}
 			else{
-				//start timer
-				timer = true;
-				before = clock();
+				printf("recvfrom() failed");
+				return;
 			}
-		}
-		if(countdown == 0){
-			//start timer
-			int i;
-			for(i = sendBase; i < nextSeqNum; i++){
-				//send packet i
-			}
-			countdown = TIMEOUT;
-		}
-		if (timer == true){
-			difference = clock() - before;
-			countdown -= difference;
-		}
-	}*/
+		 }
+		if(ack.type != 2){
+			printf("-------------------->>> Recieved ACK: %d\n", ack.ack_no);
+            if(ack.ack_no > sendBase){
+                /* Advances the sendbase, reset tries */
+                sendBase = ack.ack_no;
+            }
+        } else {
+            printf("Recieved Terminal ACK\n");
+            noTerminalACK = 0;
+        }
+		alarm(0);
+		tries = 0;
+	}
 }
 
 int main(void){
 	int socket_ID;
 	struct sockaddr_in server_addr;
-	char server_buffer[BUFFSIZE], client_buffer[BUFFSIZE];
 	int server_struct_len = sizeof(server_addr);
 
 	//clean buffers
@@ -208,10 +238,15 @@ int main(void){
 	return 0;
 }
 
+void CatchAlarm(int ignored)     /* Handler for SIGALRM */
+{
+    //printf("In Alarm\n");
+}
+
 dataPacket createTitlePacket(int seq_no, int length, char* data){
 	dataPacket pkt;
 
-	pkt.type = 1;
+	pkt.type = 0;
 	pkt.seq_no = seq_no;
 	pkt.length = length;
 	memset(pkt.data, 0, sizeof(pkt.data));
@@ -232,9 +267,9 @@ dataPacket createDataPacket(int seq_no, int length, char* data){
 	return pkt;
 }
 
-dataPacket createTerminalPacket (int seq_no){
+dataPacket createTerminalPacket(int seq_no, int length){
 
-    struct segmentPacket pkt;
+    dataPacket pkt;
 
     pkt.type = 2;
     pkt.seq_no = seq_no;
