@@ -3,15 +3,15 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define BUFF 2000
+#define BUFF 50
 #define PORT 2000
 #define EOTSTRING "$end$of$transmission$"
-#define WINDOW_SIZE 4
+#define WINDOW_SIZE 6
 
 int main(void) {
     int socket_desc;
     struct sockaddr_in server_addr, client_addr;
-    char client_message[BUFF];
+    char client_message[BUFF]; server_message[BUFF];
     int client_struct_length = sizeof(client_addr);
     int valid;
     int eof;
@@ -21,6 +21,7 @@ int main(void) {
     message = fopen("received.txt", "a");
     // Clean buffers:
     memset(client_message, '\0', sizeof(client_message));
+    memset(server_message, '\0', sizeof(server_message));
     
     // Create UDP socket:
     socket_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -81,7 +82,7 @@ int main(void) {
                         ackedSeqNum = receivedSeqNum;
 
                         // Send ACK for received sequence number
-                        sprintf(client_message, "%d", receivedSeqNum);
+                        sprintf(server_message, "$ACK#%d", receivedSeqNum);
                         sendto(socket_desc, client_message, strlen(client_message), 0,
                         (struct sockaddr*)&client_addr, client_struct_length);
 
@@ -94,10 +95,10 @@ int main(void) {
                 }
                 else {
                     // Send cumulative ACK for last received frame
-                    sprintf(client_message, "$ACK#%d", ackedSeqNum);
+                    sprintf(server_message, "$ACK#%d", ackedSeqNum);
                     //print ACK for testing
-                    printf(client_message);
-                    sendto(socket_desc, client_message, strlen(client_message), 0,
+                    printf(server_message);
+                    sendto(socket_desc, sever_message, strlen(server_message), 0,
                         (struct sockaddr*)&client_addr, client_struct_length);
                 }
 
