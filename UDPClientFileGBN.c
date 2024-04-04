@@ -40,19 +40,11 @@ dataPacket createTitlePacket(int seq_no, int length, char* data);
 dataPacket createDataPacket(int seq_no, int length, char* data);
 dataPacket createTerminalPacket(int seq_no, int length);
 
-long int FileSize(char* fileName){
-	FILE* filep = fopen(fileName, "r");
-		
-	if (filep == NULL){
-		printf("File not Found!\n");
-		return -1;
-	}
+long int FileSize(FILE* fileName){
 
-	fseek(filep, 0l, SEEK_END);
+	fseek(fileName, 0l, SEEK_END);
 
-	long int fsize = ftell(filep);
-
-	fclose(filep);
+	long int fsize = ftell(fileName);
 
 	return fsize;
 }
@@ -211,7 +203,7 @@ int main(void){
 				continue;
 			}
 
-			long int fsize = FileSize(buffer);
+			long int fsize = FileSize(filep);
 			int packetsCount = (((fsize/sizeof(char))+(PACKET - 1))/PACKET) + 2; // number of packets
 
 			dataPacket* packets = packager(buffer, packetsCount);
