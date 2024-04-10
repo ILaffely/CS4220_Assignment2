@@ -31,6 +31,8 @@ struct dataPacket {
 };
 typedef struct dataPacket dataPacket;
 
+dataPacket* allPackets;
+
 struct ACKPacket {
     int type;
     int ack_no;
@@ -49,7 +51,7 @@ long int FileSize(FILE* fileName){
 	return fsize;
 }
 
-dataPacket* packager(char* buffer, int packetCount)
+void packager(char buffer[MAX], int packetCount)
 {
 	char filebuffer[PACKET];
 	dataPacket packets[packetCount]; 
@@ -61,7 +63,7 @@ dataPacket* packager(char* buffer, int packetCount)
 		
 	if (filep == NULL){
 		printf("File not Found!\n");
-		return NULL;
+		return;
 	}
 	//packeter
 	while(!feof(filep)){
@@ -73,10 +75,10 @@ dataPacket* packager(char* buffer, int packetCount)
 
 	packets[currPacket] = createTerminalPacket(currPacket, 0);
 
-	return 0;
+	allPackets = packets;
 }
 
-void GBNSend(dataPacket* packets, int packetsLength, int socket_ID, struct sockaddr_in server_addr,int server_struct_len){
+void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,int server_struct_len){
 	
 	int sendBase = -1;
 	int nextSeqNum = 0;
@@ -95,7 +97,7 @@ void GBNSend(dataPacket* packets, int packetsLength, int socket_ID, struct socka
 	while(noTerminalACK){
 		/*send packets from base to window size*/
 		while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
-			if(sendto(socket_ID, &packets[nextSeqNum], sizeof(char)*strlen(packets[nextSeqNum].data), 0, 
+			if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 					printf("Unable to send message.\n");
 					return;
@@ -124,7 +126,7 @@ void GBNSend(dataPacket* packets, int packetsLength, int socket_ID, struct socka
 					alarm(0);
 
 					while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
-						if(sendto(socket_ID, &packets[nextSeqNum], sizeof(char)*strlen(packets[nextSeqNum].data), 0, 
+						if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
 				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 							printf("Unable to send message.\n");
 							return;
@@ -188,7 +190,7 @@ int main(void){
 		printf("Enter File Name: ");
 		n = 0;
 
-		while((buffer[n++] = getchar()) != '\n');
+		while((buffer[n++] = getchar()) != '\n' && strlen(buffer) < MAX );
 
 		if(strncmp("exit",buffer,4) == 0){
 			printf("Client Exit...\n");
@@ -206,10 +208,10 @@ int main(void){
 			long int fsize = FileSize(filep);
 			int packetsCount = (((fsize/sizeof(char))+(PACKET - 1))/PACKET) + 2; // number of packets
 
-			dataPacket* packets = packager(buffer, packetsCount);
+			packager(buffer, packetsCount);
 
 			//send the message to the server
-			GBNSend(packets, packetsCount, socket_ID, server_addr, server_struct_len);
+			GBNSend(packetsCount, socket_ID, server_addr, server_struct_len);
 			
 			/**/
 
