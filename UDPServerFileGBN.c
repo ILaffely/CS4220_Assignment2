@@ -9,7 +9,7 @@
 #define BUFF 1024
 #define PORT 2047
 #define EOTSTRING "$end$of$transmission$"
-#define LOSS_RATE 0.05
+#define LOSS_RATE 0.25
 
 //structs
 struct dataPacket {
@@ -29,6 +29,7 @@ typedef struct ACKPacket ACKPacket;
 //functions 
 int losePacket(float lossRate);
 void updateACK (ACKPacket* ack, int type, int num);
+int loosePacketOutOfTen();
 
 int main(void){
     int socket_desc;
@@ -39,6 +40,7 @@ int main(void){
     int seqNum;
     int valid;
     int base;
+    int lossTracker;
     FILE *outputFile;
 
     //clean server adderss
@@ -67,7 +69,7 @@ int main(void){
 
 
     //service loop
-
+    lossTracker = 1;
     valid = 1;
     base = -1;
     int ackVal = 1;
@@ -89,7 +91,7 @@ int main(void){
         seqNum = inboundPacket.seq_no;
         printf("\n\nMessage Size Received: %d\n",messageSize);
         //random packet loss for testing purposes, controlled by LOSS_RATE
-        if (!losePacket(LOSS_RATE)) 
+        if (!loosePacketOutOfTen()) 
         {
 
             //check if this is the initial packet
@@ -125,6 +127,7 @@ int main(void){
                 printf("Correct packet received. Packet: %d\nPacket Type: %d", inboundPacket.seq_no, inboundPacket.type);
                 printf("\n\nData: -- %s\n\n", inboundPacket.data);
                 //print data to file
+                inboundPacket.data[inboundPacket.length] = '\0';
                 fprintf(outputFile, "%s", inboundPacket.data);
                 
                 //update base and ack
@@ -159,9 +162,7 @@ int main(void){
                 fclose(outputFile);
                 memset(client_message, '\0', sizeof(client_message));
                 updateACK(&ACK, inboundPacket.type, base);
-            } else {
-                printf("\nLooped past, not end of file\n");
-            }
+            } 
 
             if (base >= 0 && ackVal == 1) //Send ACK for each packet
             {
@@ -192,6 +193,8 @@ int main(void){
     return 0;
 }
 
+//tried to create a function that randomly lost packets, problem is rand is based on time
+//and often the transmission completes in a single tick
 int losePacket(float lossRate) {
     srand(time(0));
     int random;
@@ -204,6 +207,19 @@ int losePacket(float lossRate) {
         loss = 0;
     }
     return loss;
+}
+
+//loss simulator that loses one out of every 10 packets
+//useful for gaurenteeing a simulated loss
+int loosePacketOutOfTen(){
+    static int count = 0; // Static variable to keep track of calls
+    count++; // Increment the count on each call
+
+    if (count % 10 == 0) {
+        return 1; // Return true for every 10th call
+    } else {
+        return 0; // Return false otherwise
+    }
 }
 
 //a function to update the ack packet
