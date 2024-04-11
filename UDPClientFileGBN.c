@@ -11,7 +11,7 @@
 #define PACKET 64
 #define DATALIMIT 1023
 #define MAX 80
-#define BUFFSIZE 1023
+#define BUFFSIZE 2047
 #define WINDOW 6
 #define TIMEOUT 3
 #define MAXTRIES 10
