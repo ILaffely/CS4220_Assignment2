@@ -50,6 +50,8 @@ long int FileSize(FILE* fileName){
 	return fsize;
 }
 
+
+//packager function to take the contents of the file and split it up into an array of numbered packets
 void packager(char buffer[MAX], int packetCount)
 {
 	char filebuffer[PACKET];
@@ -60,6 +62,8 @@ void packager(char buffer[MAX], int packetCount)
 	allPackets[0] = createTitlePacket(0,strlen(buffer),buffer);
 
 	int currPacket = 1;
+
+	//open the file
 	FILE* filep = fopen(buffer, "r");
 		
 	if (filep == NULL){
@@ -78,6 +82,8 @@ void packager(char buffer[MAX], int packetCount)
 	allPackets[currPacket] = createTerminalPacket(currPacket, 0);
 }
 
+
+//function to send the data packets recive the ack's, loops until a terminal packet is recieved 
 void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,int server_struct_len){
 	
 	int sendBase = -1;
@@ -87,6 +93,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 
 	int respStringLen;
 
+	//set up the alarm to timeout no ack packet is recieved
 	struct sigaction AlrmSig;
 	AlrmSig.sa_handler = CatchAlarm;
 	if (sigemptyset(&AlrmSig.sa_mask) < 0){ printf("sigfillset() failed"); return; }
@@ -96,7 +103,8 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 
 	int noTerminalACK = 1;
 	while(noTerminalACK){
-		/*send packets from base to window size*/
+		
+		//sends packets of the specified window size to the server 
 		while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
 			if(sentSize = sendto(socket_ID, &allPackets[nextSeqNum], sizeof(dataPacket), 0, 
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
@@ -105,14 +113,14 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				} else {
 					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",allPackets[nextSeqNum].seq_no, allPackets[nextSeqNum].type);
 					printf("\n\nPacket Data: \n %s\n\n",&allPackets[nextSeqNum].data);
-					printf("\nNumber of bytes sent: %d\n",sentSize);
 				} 
 			nextSeqNum++;
 		}
 		
-		//timer
+		//timer to timeout server if no ack
 		alarm(3);
 
+		//set up the ACK packet to recieve the ACK
 		struct ACKPacket ack;
 		memset(&ack, 0, sizeof(ack));
 
@@ -124,6 +132,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				//reset to one after last successfull ack
 				nextSeqNum = sendBase;
 
+				//try to resent until max tries have been reached
 				printf("Timeout: Trying Again");
 				if (tries >= MAXTRIES){
 					printf("Max Attemps Exceded: Returning");
@@ -154,14 +163,14 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 		if(ack.type != 3){
 			printf("-------------------->>> Recieved ACK: %d\nACK type: %d\n", ack.ack_no, ack.type);
             if(ack.ack_no > sendBase){
-                /* Advances the sendbase, reset tries */
+                // Advances the sendbase
                 sendBase = ack.ack_no;
             }
         } else {
             printf("Recieved Terminal ACK\n");
             noTerminalACK = 0;
         }
-		/*recvfrom got a hit, cancel timer*/
+		//if recvfrom recived data, cancel the timeout and reset the number of tries
 		alarm(0);
 		tries = 0;
 	}
@@ -193,8 +202,9 @@ int main(void){
 	//send file
 	char buffer[MAX];
 	int n;
+	int exitFlag = 1;
 
-	while(1){
+	while(exitFlag){
 		bzero(buffer, MAX);
 		//to send a txt file
 		printf("Enter File Name: ");
@@ -204,9 +214,10 @@ int main(void){
 
 		if(strncmp("exit",buffer,4) == 0){
 			printf("Client Exit...\n");
-			break;
+			exitFlag = 0;
 		}
 		else{
+			//open the file
 			buffer[strcspn(buffer, "\n")] = 0;
 			FILE* filep = fopen(buffer, "r");
 		
@@ -226,9 +237,8 @@ int main(void){
 			//send the message to the server
 			GBNSend(packetsCount, socket_ID, server_addr, server_struct_len);
 			
+			//free up the memory for the packet array and zero the buffer
 			free(allPackets);
-			/**/
-
 			bzero(buffer, MAX);
 		}
 	}
@@ -236,11 +246,13 @@ int main(void){
 	return 0;
 }
 
-void CatchAlarm(int ignored)     /* Handler for SIGALRM */
+//Handler function for Sigalarm
+void CatchAlarm(int ignore)  
 {
-    //printf("In Alarm\n");
 }
 
+
+//functions to create the three packet types
 dataPacket createTitlePacket(int seq_no, int length, char* data){
 	dataPacket pkt;
 
@@ -261,7 +273,6 @@ dataPacket createDataPacket(int seq_no, int length, char* data){
 	pkt.length = length;
 	memset(pkt.data, 0, sizeof(pkt.data));
     strcpy(pkt.data, data);
-	printf("Creating packet %d\nData contained: %s\n",seq_no,data);
 	return pkt;
 }
 
@@ -273,6 +284,5 @@ dataPacket createTerminalPacket(int seq_no, int length){
     pkt.seq_no = seq_no;
     pkt.length = 0;
     memset(pkt.data, 0, sizeof(pkt.data));
-	printf("Created terminal packet\n");
     return pkt;
 }

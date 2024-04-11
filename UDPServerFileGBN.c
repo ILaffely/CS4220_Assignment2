@@ -8,8 +8,8 @@
 //constants
 #define BUFF 1024
 #define PORT 2099
-#define EOTSTRING "$end$of$transmission$"
-#define LOSS_RATE 0.25
+//how many packets till forced loss
+#define LOSS_RATE 50
 
 //structs
 struct dataPacket {
