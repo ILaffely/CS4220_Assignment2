@@ -10,7 +10,7 @@
 #define PACKET 64
 #define DATALIMIT 1023
 #define MAX 80
-#define BUFFSIZE 2047
+#define BUFFSIZE 2099
 #define WINDOW 6
 #define TIMEOUT 3
 #define MAXTRIES 10
@@ -111,6 +111,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 		alarm(3);
 
 		struct ACKPacket ack;
+		memset(&ack, 0, sizeof(ack));
 
 		while(respStringLen = recvfrom(socket_ID, &ack, sizeof(ack), 0,
 		 (struct sockaddr*)&server_addr, &server_struct_len) < 0){
@@ -146,7 +147,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				return;
 			}
 		}
-		if(ack.type != 2){
+		if(ack.type != 3){
 			printf("-------------------->>> Recieved ACK: %d\nACK type: %d\n", ack.ack_no, ack.type);
             if(ack.ack_no > sendBase){
                 /* Advances the sendbase, reset tries */
@@ -236,7 +237,7 @@ void CatchAlarm(int ignored)     /* Handler for SIGALRM */
 dataPacket createTitlePacket(int seq_no, int length, char* data){
 	dataPacket pkt;
 
-	pkt.type = 0;
+	pkt.type = 1;
 	pkt.seq_no = seq_no;
 	pkt.length = length;
 	memset(pkt.data, 0, sizeof(pkt.data));
@@ -248,7 +249,7 @@ dataPacket createTitlePacket(int seq_no, int length, char* data){
 dataPacket createDataPacket(int seq_no, int length, char* data){
 	dataPacket pkt;
 
-	pkt.type = 1;
+	pkt.type = 2;
 	pkt.seq_no = seq_no;
 	pkt.length = length;
 	memset(pkt.data, 0, sizeof(pkt.data));
@@ -261,7 +262,7 @@ dataPacket createTerminalPacket(int seq_no, int length){
 
     dataPacket pkt;
 
-    pkt.type = 2;
+    pkt.type = 3;
     pkt.seq_no = seq_no;
     pkt.length = 0;
     memset(pkt.data, 0, sizeof(pkt.data));
