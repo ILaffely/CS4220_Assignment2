@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define EOTSTRING "$end$of$transmission$"
 #define PACKET 64
 #define DATALIMIT 1023
 #define MAX 80
@@ -55,10 +54,6 @@ void packager(char buffer[MAX], int packetCount)
 {
 	char filebuffer[PACKET];
 	allPackets = malloc(packetCount * sizeof(dataPacket)); 
-	/*int i;
-	for (i = 0; i < packetCount; i++){
-		packets[i] = createDataPacket(NULL,NULL,NULL);
-	}*/
 
 	allPackets[0] = createTitlePacket(0,strlen(buffer),buffer);
 
@@ -145,7 +140,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				printf("recvfrom() failed");
 				return;
 			}
-		 }
+		}
 		if(ack.type != 2){
 			printf("-------------------->>> Recieved ACK: %d\n", ack.ack_no);
             if(ack.ack_no > sendBase){
@@ -156,6 +151,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
             printf("Recieved Terminal ACK\n");
             noTerminalACK = 0;
         }
+		/*recvfrom got a hit, cancel timer*/
 		alarm(0);
 		tries = 0;
 	}
@@ -223,16 +219,6 @@ int main(void){
 			bzero(buffer, MAX);
 		}
 	}
-
-
-	/*//get server response
-	if(recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
-	(struct sockaddr*)&server_addr, &server_struct_len) < 0){
-		printf("Error receiving server message.\n");
-		return -1;
-	}
-
-	printf("Server> %s\n", server_buffer);*/
 
 	return 0;
 }
