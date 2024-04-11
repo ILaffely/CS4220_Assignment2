@@ -275,6 +275,7 @@ dataPacket createTerminalPacket(int seq_no, int length){
     pkt.seq_no = seq_no;
     pkt.length = 0;
     memset(pkt.data, 0, sizeof(pkt.data));
+	strcpy(pkt.data, "123456789012");
 	printf("Created terminal packet\n");
     return pkt;
 }

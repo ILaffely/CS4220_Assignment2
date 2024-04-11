@@ -150,7 +150,7 @@ int main(void){
                 
                 //update the base to inactive
                 base = -1;
-
+                valid = 0;
                 //print EOF
                 printf("End of Message\n");
                 fprintf(outputFile,"\nEnd of Message\n");
