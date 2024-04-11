@@ -93,14 +93,15 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 	int noTerminalACK = 1;
 	while(noTerminalACK){
 		/*send packets from base to window size*/
-		while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
+		while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
 			if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 					printf("Unable to send message.\n");
 					return;
 				} else {
-					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",&allPackets[nextSeqNum].seq_no, &allPackets[nextSeqNum].type)
-				}
+					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",allPackets[nextSeqNum].seq_no, allPackets[nextSeqNum].type);
+					printf("\n\nPacket Data: \n %s\n\n",&allPackets[nextSeqNum].data);
+				} 
 			nextSeqNum++;
 		}
 		
@@ -114,7 +115,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 
 			if (errno == EINTR){ /*alarm activated*/
 				//reset to one after last successfull ack
-				nextSeqNum = sendBase + 1;
+				nextSeqNum = sendBase;
 
 				printf("Timeout: Trying Again");
 				if (tries >= MAXTRIES){
@@ -124,7 +125,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				else{
 					alarm(0);
 
-					while(nextSeqNum <= packetsLength && nextSeqNum <= sendBase + WINDOW){
+					while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
 						if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
 				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 							printf("Unable to send message.\n");
@@ -142,10 +143,10 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 			}
 		}
 		if(ack.type != 2){
-			printf("-------------------->>> Recieved ACK: %d\n", ack.ack_no);
+			printf("-------------------->>> Recieved ACK: %d\nACK type: %d\n", ack.ack_no, ack.type);
             if(ack.ack_no > sendBase){
                 /* Advances the sendbase, reset tries */
-                sendBase = ack.ack_no + 1;
+                sendBase = ack.ack_no;
             }
         } else {
             printf("Recieved Terminal ACK\n");
@@ -248,7 +249,7 @@ dataPacket createDataPacket(int seq_no, int length, char* data){
 	pkt.length = length;
 	memset(pkt.data, 0, sizeof(pkt.data));
     strcpy(pkt.data, data);
-
+	printf("Creating packet %d\nData contained: %s\n",seq_no,data);
 	return pkt;
 }
 
@@ -260,6 +261,6 @@ dataPacket createTerminalPacket(int seq_no, int length){
     pkt.seq_no = seq_no;
     pkt.length = 0;
     memset(pkt.data, 0, sizeof(pkt.data));
-
+	printf("Created terminal packet\n");
     return pkt;
 }
