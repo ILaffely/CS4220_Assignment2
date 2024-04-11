@@ -26,7 +26,7 @@ struct dataPacket {
     int type;
     int seq_no;
     int length;
-    char data[1024];
+    char data[512];
 };
 typedef struct dataPacket dataPacket;
 
@@ -80,6 +80,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 	int sendBase = -1;
 	int nextSeqNum = 0;
 	int dataLength = 0;
+	int sentSize;
 
 	int respStringLen;
 
@@ -94,13 +95,14 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 	while(noTerminalACK){
 		/*send packets from base to window size*/
 		while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
-			if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
+			if(sentSize = sendto(socket_ID, &allPackets[nextSeqNum], sizeof(dataPacket), 0, 
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 					printf("Unable to send message.\n");
 					return;
 				} else {
 					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",allPackets[nextSeqNum].seq_no, allPackets[nextSeqNum].type);
 					printf("\n\nPacket Data: \n %s\n\n",&allPackets[nextSeqNum].data);
+					printf("\nNumber of bytes sent: %d\n",sentSize);
 				} 
 			nextSeqNum++;
 		}
@@ -126,10 +128,12 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 					alarm(0);
 
 					while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
-						if(sendto(socket_ID, &allPackets[nextSeqNum], sizeof(char)*strlen(allPackets[nextSeqNum].data), 0, 
+						if(sentSize = sendto(socket_ID, &allPackets[nextSeqNum], sizeof(dataPacket), 0, 
 				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 							printf("Unable to send message.\n");
 							return;
+						} else {
+							printf("\nNumber of bytes sent: %d\n",sentSize);
 						}
 						nextSeqNum++;
 					}
@@ -261,7 +265,6 @@ dataPacket createTerminalPacket(int seq_no, int length){
     pkt.seq_no = seq_no;
     pkt.length = 0;
     memset(pkt.data, 0, sizeof(pkt.data));
-	strcpy(pkt.data, "123456789012");
 	printf("Created terminal packet\n");
     return pkt;
 }

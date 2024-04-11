@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 //constants
-#define BUFF 2047
+#define BUFF 1024
 #define PORT 2047
 #define EOTSTRING "$end$of$transmission$"
 #define LOSS_RATE 0.05
@@ -16,7 +16,7 @@ struct dataPacket {
     int type;
     int seq_no;
     int length;
-    char data[1024];
+    char data[512];
 };
 typedef struct dataPacket dataPacket;
 
@@ -34,7 +34,7 @@ int main(void){
     int socket_desc;
     struct sockaddr_in server_addr, client_addr;
     char client_message[BUFF];
-    int client_struct_length;
+    unsigned int client_struct_length;
     int messageSize;
     int seqNum;
     int valid;
@@ -87,7 +87,7 @@ int main(void){
             return -1;
         }
         seqNum = inboundPacket.seq_no;
-
+        printf("\n\nMessage Size Received: %d\n",messageSize);
         //random packet loss for testing purposes, controlled by LOSS_RATE
         if (!losePacket(LOSS_RATE)) 
         {
