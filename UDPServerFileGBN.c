@@ -92,7 +92,7 @@ int main(void){
         }
         seqNum = inboundPacket.seq_no;
         printf("\n\nMessage Size Received: %d\n",messageSize);
-        //random packet loss for testing purposes, controlled by LOSS_RATE
+        //schedruled packet loss for testing purposes
         if (!loosePacketOutOfTen()) 
         {
 
