@@ -53,8 +53,10 @@ long int FileSize(FILE* fileName){
 void packager(char buffer[MAX], int packetCount)
 {
 	char filebuffer[PACKET];
-	allPackets = malloc(packetCount * sizeof(dataPacket)); 
+	//allocate memory for packets, free() near the bottom of main
+	allPackets = malloc(packetCount * sizeof(dataPacket)); //global pointer
 
+	//initial packet
 	allPackets[0] = createTitlePacket(0,strlen(buffer),buffer);
 
 	int currPacket = 1;
@@ -64,7 +66,7 @@ void packager(char buffer[MAX], int packetCount)
 		printf("File not Found!\n");
 		return;
 	}
-	//packeter
+	//packets all file data
 	while(!feof(filep)){
 		bzero(filebuffer, sizeof(filebuffer));
 		int offset = fread(filebuffer, sizeof(char), PACKET, filep); //amount of chars read
@@ -72,6 +74,7 @@ void packager(char buffer[MAX], int packetCount)
 		currPacket++;
 	}
 	fclose(filep);
+	//creates and places terminal packet
 	allPackets[currPacket] = createTerminalPacket(currPacket, 0);
 }
 
@@ -113,6 +116,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 		struct ACKPacket ack;
 		memset(&ack, 0, sizeof(ack));
 
+		/*loops while NOT receiving an ACK*/
 		while(respStringLen = recvfrom(socket_ID, &ack, sizeof(ack), 0,
 		 (struct sockaddr*)&server_addr, &server_struct_len) < 0){
 
@@ -127,7 +131,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				}
 				else{
 					alarm(0);
-
+					/*packet re-sending loop*/
 					while(nextSeqNum <= packetsLength  && nextSeqNum <= sendBase + WINDOW){
 						if(sentSize = sendto(socket_ID, &allPackets[nextSeqNum], sizeof(dataPacket), 0, 
 				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
@@ -212,8 +216,11 @@ int main(void){
 			}
 
 			long int fsize = FileSize(filep);
+
+			//determines # of packets needed to aid in memory allocation
 			int packetsCount = (((fsize/sizeof(char))+(PACKET - 1))/PACKET) + 2; // number of packets
 
+			//packages file data and creates packet array
 			packager(buffer, packetsCount);
 
 			//send the message to the server
