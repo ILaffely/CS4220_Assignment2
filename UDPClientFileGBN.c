@@ -112,7 +112,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 
 		struct ACKPacket ack;
 
-		while(respStringLen = recvfrom(socket_ID, server_buffer, sizeof(server_buffer), 0,
+		while(respStringLen = recvfrom(socket_ID, &ack, sizeof(ack), 0,
 		 (struct sockaddr*)&server_addr, &server_struct_len) < 0){
 
 			if (errno == EINTR){ /*alarm activated*/
