@@ -104,7 +104,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 					printf("Unable to send message.\n");
 					return;
 				} else {
-					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",&allPackets[nextSeqNum].seq_no, &allPackets[nextSeqNum].type)
+					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",&allPackets[nextSeqNum].seq_no, &allPackets[nextSeqNum].type);
 				}
 			nextSeqNum++;
 		}
@@ -119,7 +119,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 
 			if (errno == EINTR){ /*alarm activated*/
 				//reset to one after last successfull ack
-				nextSeqNum = sendBase + 1;
+				nextSeqNum = sendBase;
 
 				printf("Timeout: Trying Again");
 				if (tries >= MAXTRIES){
