@@ -104,7 +104,7 @@ int main(void){
                 memset(client_message, '\0', sizeof(client_message));
 
 
-                //transfer the data from the packet to the buffer with a received postfix to distinguish the received file when run locally
+                //transfer the data from the packet to the buffer with a received prefix to distinguish the received file when run locally
                sprintf(client_message, "received--%s", inboundPacket.data);
                 printf("\n\nInitial packet received with filename: %s",inboundPacket.data);
                 //open a file for writing
@@ -114,6 +114,8 @@ int main(void){
                     printf("Error opening file\n");
                     return -1;
                 }
+
+                //printing information about the file
                 memset(client_message, '\0', sizeof(client_message));
                 printf("Initial packet received from %s\n", inet_ntoa(client_addr.sin_addr));
 
@@ -174,7 +176,9 @@ int main(void){
                     printf("Incorrect number of bytes sent");
                     return -1;
                 }
+            //if the base is -1 the terminal package was recived
             } else if (base == -1) {
+                //reset base to -2 so that another terminal signal will not be sent until another file is recived
                 base = -2;
                 printf("Terminal signal received, EOF confirmed\n");
                 if (sendto(socket_desc, &ACK, sizeof(ACK), 0,
@@ -189,6 +193,7 @@ int main(void){
         }
     }
     
+    //currently this cant be accessed, thinking about adding a kill signal
     printf("\nLoop killed, server shutdown\n");
     // Close the socket
     close(socket_desc);
@@ -198,6 +203,8 @@ int main(void){
 
 //tried to create a function that randomly lost packets, problem is rand is based on time
 //and often the transmission completes in a single tick
+//I could use a better random function from a different library 
+//but the fixed loss rate below worked just fine for testing
 int losePacket(float lossRate) {
     srand(time(0));
     int random;
@@ -214,13 +221,13 @@ int losePacket(float lossRate) {
 
 //loss simulator that loses one out of every 10 packets
 //useful for gaurenteeing a simulated loss
-//10 was way too slow, changed to 1/50
+//10 was way too slow for alice in wonderland, changed to 1/50
 //still works though
 int loosePacketOutOfTen(){
     static int count = 0; 
     count++; 
 
-    if (count % 500 == 0) {
+    if (count % 50 == 0) {
         return 1; 
     } else {
         return 0; 
