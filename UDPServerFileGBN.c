@@ -6,8 +6,8 @@
 #include <stdlib.h>
 
 //constants
-#define BUFF 2048
-#define PORT 2000
+#define BUFF 2047
+#define PORT 2047
 #define EOTSTRING "$end$of$transmission$"
 #define LOSS_RATE 0.05
 
