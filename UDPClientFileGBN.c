@@ -54,9 +54,13 @@ long int FileSize(FILE* fileName){
 void packager(char buffer[MAX], int packetCount)
 {
 	char filebuffer[PACKET];
-	dataPacket packets[packetCount]; 
+	allPackets = malloc(packetCount * sizeof(dataPacket)); 
+	/*int i;
+	for (i = 0; i < packetCount; i++){
+		packets[i] = createDataPacket(NULL,NULL,NULL);
+	}*/
 
-	packets[0] = createTitlePacket(0,strlen(buffer),buffer);
+	allPackets[0] = createTitlePacket(0,strlen(buffer),buffer);
 
 	int currPacket = 1;
 	FILE* filep = fopen(buffer, "r");
@@ -69,13 +73,11 @@ void packager(char buffer[MAX], int packetCount)
 	while(!feof(filep)){
 		bzero(filebuffer, sizeof(filebuffer));
 		int offset = fread(filebuffer, sizeof(char), PACKET, filep); //amount of chars read
-		packets[currPacket] = createDataPacket(currPacket,offset,filebuffer);
+		allPackets[currPacket] = createDataPacket(currPacket,offset,filebuffer);
 		currPacket++;
 	}
 
-	packets[currPacket] = createTerminalPacket(currPacket, 0);
-
-	allPackets = packets;
+	allPackets[currPacket] = createTerminalPacket(currPacket, 0);
 }
 
 void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,int server_struct_len){
@@ -213,6 +215,7 @@ int main(void){
 			//send the message to the server
 			GBNSend(packetsCount, socket_ID, server_addr, server_struct_len);
 			
+			free(allPackets);
 			/**/
 
 			bzero(buffer, MAX);
