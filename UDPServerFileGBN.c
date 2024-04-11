@@ -40,7 +40,6 @@ int main(void){
     int seqNum;
     int valid;
     int base;
-    int lossTracker;
     FILE *outputFile;
 
     //clean server adderss
@@ -69,7 +68,6 @@ int main(void){
 
 
     //service loop
-    lossTracker = 1;
     valid = 1;
     base = -2;
     int ackVal = 1;
