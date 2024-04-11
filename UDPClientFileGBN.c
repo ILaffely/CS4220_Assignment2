@@ -103,6 +103,8 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 					printf("Unable to send message.\n");
 					return;
+				} else {
+					printf("Packet sent...\nPacket Number: %d\nPacket Type: %d\n",&allPackets[nextSeqNum].seq_no, &allPackets[nextSeqNum].type)
 				}
 			nextSeqNum++;
 		}
@@ -148,7 +150,7 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 			printf("-------------------->>> Recieved ACK: %d\n", ack.ack_no);
             if(ack.ack_no > sendBase){
                 /* Advances the sendbase, reset tries */
-                sendBase = ack.ack_no;
+                sendBase = ack.ack_no + 1;
             }
         } else {
             printf("Recieved Terminal ACK\n");
