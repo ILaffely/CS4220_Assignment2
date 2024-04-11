@@ -76,7 +76,7 @@ void packager(char buffer[MAX], int packetCount)
 		allPackets[currPacket] = createDataPacket(currPacket,offset,filebuffer);
 		currPacket++;
 	}
-	fclose(filep)
+	fclose(filep);
 	allPackets[currPacket] = createTerminalPacket(currPacket, 0);
 }
 
