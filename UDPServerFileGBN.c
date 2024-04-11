@@ -70,6 +70,7 @@ int main(void){
 
     valid = 1;
     base = -1;
+    int ackVal = 1;
     while (valid) {
 
         client_struct_length = sizeof(client_addr);
@@ -98,9 +99,10 @@ int main(void){
                 //zero out the buffer
                 memset(client_message, '\0', sizeof(client_message));
 
+
                 //transfer the data from the packet to the buffer with a received postfix to distinguish the received file when run locally
                sprintf(client_message, "received--%s", inboundPacket.data);
-
+                printf("\n\nInitial packet received with filename: %s",inboundPacket.data);
                 //open a file for writing
                 outputFile = fopen(client_message, "w");
 
@@ -108,7 +110,7 @@ int main(void){
                     printf("Error opening file\n");
                     return -1;
                 }
-
+                memset(client_message, '\0', sizeof(client_message));
                 printf("Initial packet received from %s\n", inet_ntoa(client_addr.sin_addr));
 
                 fprintf(outputFile, "Initial packet received from %s\n%s\n", 
@@ -118,28 +120,33 @@ int main(void){
 
                 updateACK(&ACK,inboundPacket.type,base);
 
-            } else if (inboundPacket.seq_no == base + 1) //if it is not the initial packe, check if it is the correct sequential packet'
+            } else if (inboundPacket.type == 1 && inboundPacket.seq_no == base + 1) //if it is not the initial packe, check if it is the correct sequential packet'
             {
                 printf("Correct packet received. Packet: %d\nPacket Type: %d", inboundPacket.seq_no, inboundPacket.type);
-                printf("\nData: -- %s", inboundPacket.data);
+                printf("\n\nData: -- %s\n\n", inboundPacket.data);
                 //print data to file
                 fprintf(outputFile, "%s", inboundPacket.data);
                 
                 //update base and ack
                 base++;
                 updateACK(&ACK, inboundPacket.type, base);
+                ackVal = 1;
 
             } else if (inboundPacket.type == 1 && inboundPacket.seq_no != base + 1) //if it is a data packet but the sequence is wrong
             {
-                printf("Out of sequence packet received. Packet: %d", inboundPacket.seq_no);
-
+                printf("Out of sequence packet received. Packet: %d\n", inboundPacket.seq_no);
+                memset(client_message, '\0', sizeof(client_message));
                 //update ack with num of last in seq packet DO NOT update base
 
                 updateACK(&ACK,inboundPacket.type,base);
+
+                ackVal= 0;
+
+
             } 
 
             //check for the terminal packet, which should also be the last 
-            if (inboundPacket.type == 2 && inboundPacket.seq_no == base + 1) {
+            if (inboundPacket.type == 2) {
                 
                 //update the base to inactive
                 base = -1;
@@ -152,9 +159,11 @@ int main(void){
                 fclose(outputFile);
                 memset(client_message, '\0', sizeof(client_message));
                 updateACK(&ACK, inboundPacket.type, base);
+            } else {
+                printf("\nLooped past, not end of file\n");
             }
 
-            if (base >= 0) //Send ACK for each packet
+            if (base >= 0 && ackVal == 1) //Send ACK for each packet
             {
                 printf("Sending ACK: %d\n Sent to -- %s\nACK type: %d\n", base, inet_ntoa(client_addr.sin_addr),ACK.type);
                 if (sendto(socket_desc, &ACK, sizeof(ACK), 0,
