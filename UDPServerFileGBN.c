@@ -120,7 +120,7 @@ int main(void){
 
             } else if (inboundPacket.seq_no == base + 1) //if it is not the initial packe, check if it is the correct sequential packet'
             {
-                printf("Correct packet received. Packet: %d\n", inboundPacket.seq_no);
+                printf("Correct packet received. Packet: %d\nPacket Type: %d", inboundPacket.seq_no, inboundPacket.type);
 
                 //print data to file
                 fprintf(outputFile, "%s", inboundPacket.data);
@@ -151,12 +151,12 @@ int main(void){
                 //close the output file
                 fclose(outputFile);
                 memset(client_message, '\0', sizeof(client_message));
-
+                updateACK(&ACK, inboundPacket.type, base);
             }
 
             if (base >= 0) //Send ACK for each packet
             {
-                printf("Sending ACK:%d\n Sent to -- %s", base, inet_ntoa(client_addr.sin_addr));
+                printf("Sending ACK: %d\n Sent to -- %s\nACK type: %d", base, inet_ntoa(client_addr.sin_addr),ACK.type);
                 if (sendto(socket_desc, &ACK, sizeof(ACK), 0,
                 (struct sockaddr *) &client_addr, sizeof(client_addr)) != sizeof(ACK)) {
                     printf("Incorrect number of bytes sent");
