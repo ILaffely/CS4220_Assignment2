@@ -10,16 +10,17 @@
 #define PACKET 64
 #define DATALIMIT 1023
 #define MAX 80
-#define BUFFSIZE 2099
+#define BUFFSIZE 2047
 #define WINDOW 6
 #define TIMEOUT 3
 #define MAXTRIES 10
+#define PORT 2099
 
 int tries = 0;
 	
 char server_buffer[BUFFSIZE], client_buffer[BUFFSIZE];
 
-void CatchAlarm(int ignored);
+void CatchAlarm(int ignore);
 
 
 struct dataPacket {
@@ -146,8 +147,6 @@ void GBNSend(int packetsLength, int socket_ID, struct sockaddr_in server_addr,in
 				 		 (struct sockaddr*)&server_addr, server_struct_len) < 0){
 							printf("Unable to send message.\n");
 							return;
-						} else {
-							printf("\nNumber of bytes sent: %d\n",sentSize);
 						}
 						nextSeqNum++;
 					}
@@ -196,7 +195,7 @@ int main(void){
 
 	//set port / IP
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(BUFFSIZE);
+	server_addr.sin_port = htons(PORT);
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	//send file

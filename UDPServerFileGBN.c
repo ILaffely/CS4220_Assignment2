@@ -9,7 +9,7 @@
 #define BUFF 1024
 #define PORT 2099
 //how many packets till forced loss
-#define LOSS_RATE 50
+#define LOSS_RATE 20
 
 //structs
 struct dataPacket {
@@ -29,7 +29,7 @@ typedef struct ACKPacket ACKPacket;
 //functions 
 int losePacket(float lossRate);
 void updateACK (ACKPacket* ack, int type, int num);
-int loosePacketOutOfTen();
+int packetLossCounter();
 
 int main(void){
     int socketDesc;
@@ -91,7 +91,7 @@ int main(void){
         seqNum = inboundPacket.seqNo;
         printf("\n\nMessage Size Received: %d\n",messageSize);
         //schedruled packet loss for testing purposes
-        if (!loosePacketOutOfTen()) 
+        if (!packetLossCounter()) 
         {
 
             //check if this is the initial packet
@@ -217,15 +217,12 @@ int losePacket(float lossRate) {
     return loss;
 }
 
-//loss simulator that loses one out of every 10 packets
-//useful for gaurenteeing a simulated loss
-//10 was way too slow for alice in wonderland, changed to 1/50
-//still works though
-int loosePacketOutOfTen(){
+//loss simulator that loses one out of every LOSS_RATE
+int packetLossCounter(){
     static int count = 0; 
     count++; 
 
-    if (count % 50 == 0) {
+    if (count % LOSS_RATE == 0) {
         return 1; 
     } else {
         return 0; 
